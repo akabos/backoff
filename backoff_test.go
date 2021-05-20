@@ -1,6 +1,8 @@
 package backoff
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -48,4 +50,20 @@ func TestBackoffDefaults(t *testing.T) {
 		time.Second * 10,
 		time.Second * 1,
 	}, r)
+}
+
+func TestSleep(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
+		b := Backoff{Initial: time.Millisecond}
+		err := b.Sleep(context.Background())
+		require.NoError(t, err)
+	})
+	t.Run("cancelled", func(t *testing.T) {
+		b := Backoff{}
+		ctx, cancel := context.WithCancel(context.Background())
+		go cancel()
+		err := b.Sleep(ctx)
+		require.Error(t, err)
+		require.True(t, errors.Is(err, context.Canceled))
+	})
 }
