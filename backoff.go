@@ -1,6 +1,7 @@
 package backoff
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"sync"
@@ -60,4 +61,15 @@ func (b *Backoff) Reset() {
 	b.mux.Lock()
 	b.current = 0
 	b.mux.Unlock()
+}
+
+func (b *Backoff) Sleep(ctx context.Context) error {
+	t := time.NewTimer(b.Next())
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		t.Stop()
+		return ctx.Err()
+	}
 }
